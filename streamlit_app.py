@@ -8,7 +8,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-st.title("Welcome to Blogga ChatBot")
+st.title("Welcome to Blog BLAST ChatBot")
 
 # Replicate Credentials
 with st.sidebar:
