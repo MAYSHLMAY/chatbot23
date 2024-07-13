@@ -1,6 +1,7 @@
 import streamlit as st
 import replicate
 import os
+import json
 
 st.set_page_config(
     page_title="My ChatBot",
@@ -13,13 +14,29 @@ def clear_chat_history():
 st.button('Clear Chat History', on_click=clear_chat_history)
 st.title("Welcome to Blog BLAST ChatBot")
 
+# Load FAQs
+faq_file_path = os.path.join(os.path.dirname(__file__), 'faqs.json')
+
+try:
+    with open(faq_file_path, 'r') as f:
+        faqs = json.load(f)
+except FileNotFoundError:
+    st.error(f"FAQ file not found at path: {faq_file_path}")
+    faqs = {}
+
+def get_faq_response(prompt):
+    for question, answer in faqs.items():
+        if prompt.lower() in question.lower():
+            return answer
+    return None
+
 # Replicate Credentials
 with st.sidebar:
     if 'REPLICATE_API_TOKEN' in st.secrets:
         replicate_api = st.secrets['REPLICATE_API_TOKEN']
     else:
         replicate_api = st.text_input('Enter Replicate API token:', type='password')
-        if not (replicate_api.startswith('r8_') and len(replicate_api)==40):
+        if not (replicate_api.startswith('r8_') and len(replicate_api) == 40):
             st.warning('Please enter your credentials!', icon='⚠️')
         else:
             st.success('Proceed to entering your prompt message!', icon='👉')
@@ -43,8 +60,6 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
 
-
-
 # Function for generating LLaMA2 response. Refactored from https://github.com/a16z-infra/llama2-chatbot
 def generate_llama2_response(prompt_input):
     string_dialogue = "You are a helpful assistant. You do not respond as 'User' or pretend to be 'User'. You only respond once as 'Assistant'."
@@ -53,7 +68,7 @@ def generate_llama2_response(prompt_input):
             string_dialogue += "User: " + dict_message["content"] + "\n\n"
         else:
             string_dialogue += "Assistant: " + dict_message["content"] + "\n\n"
-    output = replicate.run('a16z-infra/llama13b-v2-chat:df7690f1994d94e96ad9d568eac121aecf50684a0b0963b25a41cc40061269e5', 
+    output = replicate.run(llm, 
                            input={"prompt": f"{string_dialogue} {prompt_input} Assistant: ",
                                   "temperature":temperature, "top_p":top_p, "max_length":max_length, "repetition_penalty":1})
     return output
@@ -68,7 +83,12 @@ if prompt := st.chat_input(disabled=not replicate_api):
 if st.session_state.messages[-1]["role"] != "assistant":
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
-            response = generate_llama2_response(prompt)
+            # Check if prompt matches any FAQ
+            faq_response = get_faq_response(prompt)
+            if faq_response:
+                response = [faq_response]
+            else:
+                response = generate_llama2_response(prompt)
             placeholder = st.empty()
             full_response = ''
             for item in response:
