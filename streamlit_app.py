@@ -18,8 +18,6 @@ st.button('Clear Chat History', on_click=clear_chat_history)
 # Include the JavaScript code to listen for postMessage events
 st.components.v1.html(f"""
   <script>
-                      console.log("recieved")
-                      console.log(window.parent.localStorage.getItem("currentUser"))
     window.addEventListener('message', (event) => {{
      console.log('Message received from origin:', event.origin);
       if (event.origin !== 'https://blog-blast.vercel.app') return; // Validate the origin
