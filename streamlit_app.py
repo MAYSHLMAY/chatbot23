@@ -13,30 +13,11 @@ def clear_chat_history():
     st.session_state.messages = [{"role": "assistant", "content": "How may I assist you today?"}]
 st.button('Clear Chat History', on_click=clear_chat_history)
 
-def set_username(username):
-    st.write(f"Hello, {username}!")
-
-def handle_message(event):
-    try:
-        data = json.loads(event.data)
-        if data.get('type') == 'SET_USERNAME':
-            set_username(data.get('username'))
-    except (ValueError, TypeError):
-        pass
-
-st.write("""
-<script>
-window.addEventListener('message', function(event) {
-    handle_message(event);
-}, false);
-</script>
-""", unsafe_allow_html=True)
-
-# Retrieve the username from the parent component
-username = st.experimental_get_query_params().get('username', ['Guest'])[0]
-
-# Send the username to the iframe
-st.experimental_set_query_params(message=st.json({'type': 'SET_USERNAME', 'username': username}))
+def on_message(event):
+    user_name = event.data.get('userName', 'User')
+    st.write(f"Hello, {user_name}!")
+st.write("<script>window.addEventListener('message', on_message, false);</script>", unsafe_allow_html=True)
+st.title("Welcome to Blog BLAST ChatBot")
 
 
 
