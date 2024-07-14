@@ -21,15 +21,19 @@ def handle_message(event):
         data = json.loads(event.data)
         if data.get('type') == 'SET_USERNAME':
             set_username(data.get('username'))
-    except ValueError:
+    except (ValueError, TypeError):
         pass
 
 # Add the event listener to the window
 st.markdown("""
 <script>
-window.addEventListener('message', handle_message, false);
+window.addEventListener('message', function(event) {
+    handle_message({ data: event.data });
+}, false);
 </script>
 """, unsafe_allow_html=True)
+
+st.experimental_set_query_params(message=st.json(handle_message))
 
 
 
