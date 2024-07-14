@@ -38,11 +38,11 @@ window.addEventListener('message', function(event) {
 """, unsafe_allow_html=True)
 
 # Retrieve the username from the parent component
-query_params = st.experimental_get_query_params()
-username = query_params.get('username', ['Guest'])[0]
+query_params = st.query_params
+username = query_params.get('username', 'Guest')
 
 # Send the username to the iframe
-st.experimental_set_query_params(message=st.json({'type': 'SET_USERNAME', 'username': username}))
+st.query_params(message=st.json({'type': 'SET_USERNAME', 'username': username}))
 
 # Load FAQs from JSON file
 faq_file_path = os.path.join(os.path.dirname(__file__), 'faqs.json')
@@ -53,6 +53,13 @@ try:
 except FileNotFoundError:
     st.error(f"FAQ file not found at path: {faq_file_path}")
     faqs = {}
+
+# Function to get FAQ response based on prompt
+def get_faq_response(prompt):
+    for question, answer in faqs.items():
+        if prompt.lower() in question.lower():
+            return answer
+    return None
 
 # Replicate API token handling
 with st.sidebar:
