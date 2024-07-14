@@ -1,9 +1,8 @@
-
 import streamlit as st
 import replicate
 import os
 import json
-from streamlit_javascript import st_javascript
+import re  # Importing re for regular expressions
 
 st.set_page_config(
     page_title="My ChatBot",
@@ -19,10 +18,10 @@ st.button('Clear Chat History', on_click=clear_chat_history)
 # Include the JavaScript code to listen for postMessage events
 st.components.v1.html(f"""
   <script>
-                      console.log("recieved")
-                      console.log(window.parent.localStorage.getItem("currentUser"))
+    console.log("received");
+    console.log(window.parent.localStorage.getItem("currentUser"));
     window.addEventListener('message', (event) => {{
-     console.log('Message received from origin:', event.origin);
+      console.log('Message received from origin:', event.origin);
       if (event.origin !== 'https://blog-blast.vercel.app') return; // Validate the origin
 
       const message = event.data;
@@ -38,9 +37,9 @@ st.components.v1.html(f"""
   </script>
 """)
 
-# Retrieve the currentUser data from query params
-query_params = st.experimental_get_query_params()
-current_user = query_params.get('user', [None])[0]
+# Retrieve the currentUser data from query params using st.query_params
+query_params = st.query_params
+current_user = query_params.get('user', None)
 
 print(current_user)
 
@@ -61,9 +60,18 @@ except FileNotFoundError:
     st.error(f"FAQ file not found at path: {faq_file_path}")
     faqs = {}
 
+# Function to get FAQ response based on prompt
 def get_faq_response(prompt):
+    if not prompt:
+        return None
+    
+    clean_prompt = re.sub(r'[^\w\s]', '', prompt.strip())
+
     for question, answer in faqs.items():
-        if prompt.lower() in question.lower():
+        clean_question = re.sub(r'[^\w\s]', '', question.strip())
+        
+        pattern = re.compile(re.escape(clean_prompt), re.IGNORECASE)
+        if pattern.search(clean_question):
             return answer
     return None
 
