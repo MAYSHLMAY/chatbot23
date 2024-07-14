@@ -38,6 +38,8 @@ st.components.v1.html(f"""
 query_params = st.experimental_get_query_params()
 current_user = query_params.get('user', [None])[0]
 
+print(current_user)
+
 # Use the currentUser data as needed in your Streamlit app
 if current_user:
     st.write(f"Hello, {current_user}!")
