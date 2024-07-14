@@ -1,7 +1,7 @@
 import streamlit as st
 import os
 import json
-from llamaindex import GPTSimpleVectorIndex  # Assuming LlamaIndex implementation
+from llamaindex import GPTSimpleVectorIndex
 
 # Set Streamlit page configuration
 st.set_page_config(
@@ -46,7 +46,7 @@ except FileNotFoundError:
     faqs = {}
 
 # Initialize LlamaIndex
-index = GPTSimpleVectorIndex()  # Initialize your LlamaIndex instance
+index = GPTSimpleVectorIndex()
 
 # Indexing FAQs into LlamaIndex
 for question, answer in faqs.items():
