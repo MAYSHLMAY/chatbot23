@@ -1,28 +1,29 @@
-
 import streamlit as st
 import replicate
 import os
 import json
-from streamlit_javascript import st_javascript
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
+# Set Streamlit page configuration
 st.set_page_config(
-    page_title="My ChatBot",
+    page_title="Blog BLAST ChatBot",
     layout="centered",
     initial_sidebar_state="expanded",
 )
 
+# Function to clear chat history
 def clear_chat_history():
     st.session_state.messages = [{"role": "assistant", "content": "How may I assist you today?"}]
 st.button('Clear Chat History', on_click=clear_chat_history)
 
-
-# Include the JavaScript code to listen for postMessage events
+# Include JavaScript code to listen for postMessage events
 st.components.v1.html(f"""
   <script>
-                      console.log("recieved")
-                      console.log(window.parent.localStorage.getItem("currentUser"))
+    console.log("Received");
+    console.log(window.parent.localStorage.getItem("currentUser"));
+
     window.addEventListener('message', (event) => {{
-     console.log('Message received from origin:', event.origin);
+      console.log('Message received from origin:', event.origin);
       if (event.origin !== 'https://blog-blast.vercel.app') return; // Validate the origin
 
       const message = event.data;
@@ -42,17 +43,14 @@ st.components.v1.html(f"""
 query_params = st.experimental_get_query_params()
 current_user = query_params.get('user', [None])[0]
 
-print(current_user)
-
-# Use the currentUser data as needed in your Streamlit app
+# Display user greeting or login prompt
 if current_user:
     st.write(f"Hello, {current_user}!")
 else:
     st.write("User not logged in.")
 
-
-# Load FAQs
-faq_file_path = os.path.join(os.path.dirname(__file__), 'faqs.json')
+# Load FAQs from JSON file
+faq_file_path = 'faqs.json'
 
 try:
     with open(faq_file_path, 'r') as f:
@@ -61,13 +59,14 @@ except FileNotFoundError:
     st.error(f"FAQ file not found at path: {faq_file_path}")
     faqs = {}
 
+# Function to get FAQ response based on user prompt
 def get_faq_response(prompt):
     for question, answer in faqs.items():
         if prompt.lower() in question.lower():
             return answer
     return None
 
-# Replicate Credentials
+# Streamlit sidebar for Replicate API token
 with st.sidebar:
     if 'REPLICATE_API_TOKEN' in st.secrets:
         replicate_api = st.secrets['REPLICATE_API_TOKEN']
@@ -79,7 +78,8 @@ with st.sidebar:
             st.success('Proceed to entering your prompt message!', icon='👉')
     os.environ['REPLICATE_API_TOKEN'] = replicate_api
 
-    selected_model = 'Llama2-7B'
+    # Select LLaMA2 model and configuration
+    selected_model = st.selectbox('Select LLaMA2 Model', ['Llama2-7B', 'Llama2-13B'])
     if selected_model == 'Llama2-7B':
         llm = 'a16z-infra/llama7b-v2-chat:4f0a4744c7295c024a1de15e1a63c880d3da035fa1f49bfd344fe076074c8eea'
     elif selected_model == 'Llama2-13B':
@@ -88,49 +88,44 @@ with st.sidebar:
     top_p = 0.9
     max_length = 120
 
-# Store LLM generated responses
+# Initialize or retrieve chat history
 if "messages" not in st.session_state.keys():
     st.session_state.messages = [{"role": "assistant", "content": "How may Blog BLAST assist you today?"}]
 
-# Display or clear chat messages
+# Display existing chat messages
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
 
-# Function for generating LLaMA2 response. Refactored from https://github.com/a16z-infra/llama2-chatbot
+# Function to generate LLaMA2 response
 def generate_llama2_response(prompt_input):
-    string_dialogue = "You are a helpful assistant. You do not respond as 'User' or pretend to be 'User'. You only respond once as 'Assistant'."
+    dialogue_history = "You are a helpful assistant. You do not respond as 'User' or pretend to be 'User'. You only respond once as 'Assistant'."
     for dict_message in st.session_state.messages:
         if dict_message["role"] == "user":
-            string_dialogue += "User: " + dict_message["content"] + "\n\n"
+            dialogue_history += "User: " + dict_message["content"] + "\n\n"
         else:
-            string_dialogue += "Assistant: " + dict_message["content"] + "\n\n"
+            dialogue_history += "Assistant: " + dict_message["content"] + "\n\n"
     output = replicate.run(llm, 
-                           input={"prompt": f"{string_dialogue} {prompt_input} Assistant: ",
-                                  "temperature":temperature, "top_p":top_p, "max_length":max_length, "repetition_penalty":1})
+                           input={"prompt": f"{dialogue_history} {prompt_input} Assistant: ",
+                                  "temperature": temperature, "top_p": top_p, "max_length": max_length, "repetition_penalty": 1})
     return output
 
-# User-provided prompt
-if prompt := st.chat_input(disabled=not replicate_api):
+# User input for chat interaction
+if prompt := st.text_input("You:", key="user_input"):
     st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.write(prompt)
 
-# Generate a new response if last message is not from assistant
-if st.session_state.messages[-1]["role"] != "assistant":
-    with st.chat_message("assistant"):
+    # Generate response based on user input
+    if st.session_state.messages[-1]["role"] != "assistant":
         with st.spinner("Thinking..."):
-            # Check if prompt matches any FAQ
             faq_response = get_faq_response(prompt)
             if faq_response:
-                response = [faq_response]
+                response = faq_response
             else:
                 response = generate_llama2_response(prompt)
-            placeholder = st.empty()
-            full_response = ''
-            for item in response:
-                full_response += item
-                placeholder.markdown(full_response)
-            placeholder.markdown(full_response)
-    message = {"role": "assistant", "content": full_response}
-    st.session_state.messages.append(message)
+
+        st.session_state.messages.append({"role": "assistant", "content": response})
+
+# Update chat display with new messages
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.write(message["content"])
