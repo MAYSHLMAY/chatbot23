@@ -15,17 +15,22 @@ def clear_chat_history():
 st.button('Clear Chat History', on_click=clear_chat_history)
 
 
-st.components.v1.html("""
+# Include the JavaScript code to listen for postMessage events
+st.components.v1.html(f"""
   <script>
-    window.addEventListener('message', (event) => {
-      if (event.origin !== 'https://blog-blast.vercel.app/') return; // Validate the origin
+    window.addEventListener('message', (event) => {{
+      if (event.origin !== 'https://blog-blast.vercel.app') return; // Validate the origin
 
       const message = event.data;
-      if (message.type === 'setUser') {
-        const currentUser = message.user;
-        window.location.search = `?user=${encodeURIComponent(currentUser)}`;
-      }
-    });
+      if (message.type === 'setUser') {{
+        const userName = message.user;
+        const params = new URLSearchParams(window.location.search);
+        params.set('user', userName);
+        const newUrl = `${{window.location.origin}}${{window.location.pathname}}?${{params.toString()}}`;
+        window.history.replaceState(null, '', newUrl);
+        setTimeout(() => window.location.reload(), 500); // Reload page to reflect changes
+      }}
+    }});
   </script>
 """)
 
