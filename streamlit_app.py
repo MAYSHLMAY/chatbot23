@@ -5,7 +5,7 @@ import json
 import re  # Importing re for regular expressions
 
 st.set_page_config(
-    page_title="My ChatBot",
+    page_title="BlogBLAST Chatbot",
     layout="centered",
     initial_sidebar_state="expanded",
 )
