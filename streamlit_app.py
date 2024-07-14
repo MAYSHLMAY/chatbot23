@@ -13,11 +13,21 @@ def clear_chat_history():
     st.session_state.messages = [{"role": "assistant", "content": "How may I assist you today?"}]
 st.button('Clear Chat History', on_click=clear_chat_history)
 
-def on_message(event):
-    user_name = event.data.get('userName', 'User')
-    st.write(f"Hello, {user_name}!")
-st.write("<script>window.addEventListener('message', on_message, false);</script>", unsafe_allow_html=True)
-st.title("Welcome to Blog BLAST ChatBot")
+def set_username(username):
+    st.write(f"Hello, {username}!")
+
+# Set up the message event listener
+def handle_message(event):
+    data = json.loads(event.data)
+    if data.get('type') == 'SET_USERNAME':
+        set_username(data.get('username'))
+
+# Add the event listener to the window
+st.markdown("""
+<script>
+window.addEventListener('message', handle_message);
+</script>
+""", unsafe_allow_html=True)
 
 
 
