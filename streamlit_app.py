@@ -16,7 +16,7 @@ st.button('Clear Chat History', on_click=clear_chat_history)
 
 
 
-st.markdown("<h1 style='text-align: center; font-size: 3em;'>Blog BLAST Chat Bot</h1>", unsafe_allow_html=True)
+st.markdown("<h3 style='text-align: center; font-size: 3em;'>Blog BLAST Chat Bot</h3>", unsafe_allow_html=True)
 
 
 # Load FAQs
