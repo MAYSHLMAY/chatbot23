@@ -25,8 +25,8 @@ def handle_message(event):
         data = json.loads(event.data)
         if data.get('type') == 'SET_USERNAME':
             set_username(data.get('username'))
-    except (ValueError, TypeError):
-        pass
+    except (ValueError, TypeError) as e:
+        st.error(f"Error handling message: {str(e)}")
 
 # HTML script to handle incoming messages via postMessage
 st.write("""
