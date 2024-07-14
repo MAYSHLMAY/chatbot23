@@ -32,7 +32,11 @@ window.addEventListener('message', function(event) {
 </script>
 """, unsafe_allow_html=True)
 
-st.experimental_set_query_params(message=st.json({'type': 'SET_USERNAME', 'username': 'John Doe'}))
+# Retrieve the username from the parent component
+username = st.experimental_get_query_params().get('username', ['Guest'])[0]
+
+# Send the username to the iframe
+st.experimental_set_query_params(message=st.json({'type': 'SET_USERNAME', 'username': username}))
 
 
 
