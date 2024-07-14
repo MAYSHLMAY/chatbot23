@@ -1,9 +1,7 @@
-
 import streamlit as st
 import replicate
 import os
 import json
-from streamlit_javascript import st_javascript
 
 st.set_page_config(
     page_title="My ChatBot",
@@ -14,42 +12,7 @@ st.set_page_config(
 def clear_chat_history():
     st.session_state.messages = [{"role": "assistant", "content": "How may I assist you today?"}]
 st.button('Clear Chat History', on_click=clear_chat_history)
-
-
-# Include the JavaScript code to listen for postMessage events
-st.components.v1.html(f"""
-  <script>
-                      console.log("recieved")
-                      console.log(window.parent.localStorage.getItem("currentUser"))
-    window.addEventListener('message', (event) => {{
-     console.log('Message received from origin:', event.origin);
-      if (event.origin !== 'https://blog-blast.vercel.app') return; // Validate the origin
-
-      const message = event.data;
-      if (message.type === 'setUser') {{
-        const userName = message.user;
-        const params = new URLSearchParams(window.location.search);
-        params.set('user', userName);
-        const newUrl = `${{window.location.origin}}${{window.location.pathname}}?${{params.toString()}}`;
-        window.history.replaceState(null, '', newUrl);
-        setTimeout(() => window.location.reload(), 500); // Reload page to reflect changes
-      }}
-    }});
-  </script>
-""")
-
-# Retrieve the currentUser data from query params
-query_params = st.experimental_get_query_params()
-current_user = query_params.get('user', [None])[0]
-
-print(current_user)
-
-# Use the currentUser data as needed in your Streamlit app
-if current_user:
-    st.write(f"Hello, {current_user}!")
-else:
-    st.write("User not logged in.")
-
+st.title("Welcome to Blog BLAST ChatBot")
 
 # Load FAQs
 faq_file_path = os.path.join(os.path.dirname(__file__), 'faqs.json')
@@ -90,7 +53,7 @@ with st.sidebar:
 
 # Store LLM generated responses
 if "messages" not in st.session_state.keys():
-    st.session_state.messages = [{"role": "assistant", "content": "How may Blog BLAST assist you today?"}]
+    st.session_state.messages = [{"role": "assistant", "content": "How may I assist you today?"}]
 
 # Display or clear chat messages
 for message in st.session_state.messages:
