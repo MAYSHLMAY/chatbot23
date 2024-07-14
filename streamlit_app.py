@@ -3,27 +3,32 @@ import replicate
 import os
 import json
 
+# Set page configuration
 st.set_page_config(
     page_title="My ChatBot",
     layout="centered",
     initial_sidebar_state="expanded",
 )
 
+# Function to clear chat history
 def clear_chat_history():
     st.session_state.messages = [{"role": "assistant", "content": "How may I assist you today?"}]
 st.button('Clear Chat History', on_click=clear_chat_history)
 
+# Function to set username
 def set_username(username):
     st.write(f"Hello, {username}!")
 
+# Function to handle incoming messages
 def handle_message(event):
     try:
         data = json.loads(event.data)
         if data.get('type') == 'SET_USERNAME':
             set_username(data.get('username'))
-    except (ValueError, TypeError):
-        pass
+    except (ValueError, TypeError) as e:
+        st.error(f"Error handling message: {str(e)}")
 
+# HTML script to handle incoming messages via postMessage
 st.write("""
 <script>
 window.addEventListener('message', function(event) {
@@ -33,14 +38,12 @@ window.addEventListener('message', function(event) {
 """, unsafe_allow_html=True)
 
 # Retrieve the username from the parent component
-username = st.experimental_get_query_params().get('username', ['Guest'])[0]
+username = st.query_params().get('username', 'Guest')
 
 # Send the username to the iframe
 st.experimental_set_query_params(message=st.json({'type': 'SET_USERNAME', 'username': username}))
 
-
-
-# Load FAQs
+# Load FAQs from JSON file
 faq_file_path = os.path.join(os.path.dirname(__file__), 'faqs.json')
 
 try:
@@ -50,13 +53,7 @@ except FileNotFoundError:
     st.error(f"FAQ file not found at path: {faq_file_path}")
     faqs = {}
 
-def get_faq_response(prompt):
-    for question, answer in faqs.items():
-        if prompt.lower() in question.lower():
-            return answer
-    return None
-
-# Replicate Credentials
+# Replicate API token handling
 with st.sidebar:
     if 'REPLICATE_API_TOKEN' in st.secrets:
         replicate_api = st.secrets['REPLICATE_API_TOKEN']
@@ -68,6 +65,7 @@ with st.sidebar:
             st.success('Proceed to entering your prompt message!', icon='👉')
     os.environ['REPLICATE_API_TOKEN'] = replicate_api
 
+    # Selected Llama2 model and parameters
     selected_model = 'Llama2-7B'
     if selected_model == 'Llama2-7B':
         llm = 'a16z-infra/llama7b-v2-chat:4f0a4744c7295c024a1de15e1a63c880d3da035fa1f49bfd344fe076074c8eea'
@@ -77,7 +75,7 @@ with st.sidebar:
     top_p = 0.9
     max_length = 120
 
-# Store LLM generated responses
+# Initialize chat session messages
 if "messages" not in st.session_state.keys():
     st.session_state.messages = [{"role": "assistant", "content": "How may I assist you today?"}]
 
@@ -86,7 +84,7 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
 
-# Function for generating LLaMA2 response. Refactored from https://github.com/a16z-infra/llama2-chatbot
+# Function to generate LLaMA2 response
 def generate_llama2_response(prompt_input):
     string_dialogue = "You are a helpful assistant. You do not respond as 'User' or pretend to be 'User'. You only respond once as 'Assistant'."
     for dict_message in st.session_state.messages:
@@ -94,18 +92,21 @@ def generate_llama2_response(prompt_input):
             string_dialogue += "User: " + dict_message["content"] + "\n\n"
         else:
             string_dialogue += "Assistant: " + dict_message["content"] + "\n\n"
-    output = replicate.run(llm, 
-                           input={"prompt": f"{string_dialogue} {prompt_input} Assistant: ",
-                                  "temperature":temperature, "top_p":top_p, "max_length":max_length, "repetition_penalty":1})
-    return output
+    try:
+        output = replicate.run(llm, 
+                               input={"prompt": f"{string_dialogue} {prompt_input} Assistant: ",
+                                      "temperature": temperature, "top_p": top_p, "max_length": max_length, "repetition_penalty": 1})
+        return output
+    except replicate.exceptions.ReplicateError as e:
+        st.error(f"Replicate API Error: {str(e)}")
+        return ["An error occurred while generating the response. Please try again."]
 
-# User-provided prompt
+# User-provided prompt input and response generation
 if prompt := st.chat_input(disabled=not replicate_api):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.write(prompt)
 
-# Generate a new response if last message is not from assistant
 if st.session_state.messages[-1]["role"] != "assistant":
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
