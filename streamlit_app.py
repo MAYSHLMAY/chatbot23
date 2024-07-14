@@ -13,6 +13,9 @@ def clear_chat_history():
     st.session_state.messages = [{"role": "assistant", "content": "How may I assist you today?"}]
 st.button('Clear Chat History', on_click=clear_chat_history)
 
+import streamlit as st
+import json
+
 def set_username(username):
     st.write(f"Hello, {username}!")
 
@@ -24,7 +27,8 @@ def handle_message(event):
     except (ValueError, TypeError):
         pass
 
-st.write("""
+# Add the event listener to the window
+st.markdown("""
 <script>
 window.addEventListener('message', function(event) {
     handle_message(event);
@@ -33,10 +37,14 @@ window.addEventListener('message', function(event) {
 """, unsafe_allow_html=True)
 
 # Retrieve the username from the parent component
-username = st.experimental_get_query_params().get('username', ['Guest'])[0]
-
-# Send the username to the iframe
-st.experimental_set_query_params(message=st.json({'type': 'SET_USERNAME', 'username': username}))
+parent_message = st.experimental_get_query_params().get('message', [None])[0]
+if parent_message:
+    try:
+        parent_data = json.loads(parent_message)
+        if parent_data.get('type') == 'SET_USERNAME':
+            set_username(parent_data.get('username'))
+    except (ValueError, TypeError):
+        pass
 
 
 
