@@ -60,10 +60,16 @@ except FileNotFoundError:
 
 # Function to get FAQ response based on prompt
 def get_faq_response(prompt):
+    # Clean the prompt by removing extra punctuation and spaces
+    clean_prompt = re.sub(r'[^\w\s]', '', prompt.strip())
+
     for question, answer in faqs.items():
-        # Using regex to match variations of the question
-        pattern = re.compile(re.escape(prompt), re.IGNORECASE)
-        if pattern.search(question):
+        # Clean the question similarly for matching
+        clean_question = re.sub(r'[^\w\s]', '', question.strip())
+        
+        # Using regex to match variations of the cleaned prompt
+        pattern = re.compile(re.escape(clean_prompt), re.IGNORECASE)
+        if pattern.search(clean_question):
             return answer
     return None
 
