@@ -1,3 +1,4 @@
 streamlit
 replicate
 streamlit-javascript
+transformers
