@@ -1,3 +1,4 @@
+
 import streamlit as st
 import replicate
 import os
@@ -50,21 +51,34 @@ else:
     st.write("User not logged in.")
 
 
-# Load FAQs
-faq_file_path = os.path.join(os.path.dirname(__file__), 'faqs.json')
+def load_faqs(file_path):
+    try:
+        with open(file_path, 'r') as f:
+            faqs = json.load(f)
+        return faqs
+    except FileNotFoundError:
+        st.error(f"FAQ file not found at path: {file_path}")
+        return {}
 
-try:
-    with open(faq_file_path, 'r') as f:
-        faqs = json.load(f)
-except FileNotFoundError:
-    st.error(f"FAQ file not found at path: {faq_file_path}")
-    faqs = {}
-
-def get_faq_response(prompt):
+# Function to find best matching answer
+def find_answer(user_query, faqs):
     for question, answer in faqs.items():
-        if prompt.lower() in question.lower():
+        if user_query.lower() in question.lower():
             return answer
-    return None
+    return "Sorry, I don't have an answer for that."
+
+# Example usage
+file_path = 'faqs.json'
+faqs = load_faqs(file_path)
+
+
+
+if st.button("Submit"):
+    if user_input:
+        answer = find_answer(user_input, faqs)
+        st.write(answer)
+    else:
+        st.warning("Please enter a question.")
 
 # Replicate Credentials
 with st.sidebar:
