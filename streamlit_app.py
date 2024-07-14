@@ -2,6 +2,7 @@ import streamlit as st
 import replicate
 import os
 import json
+from streamlit_javascript import st_javascript
 
 st.set_page_config(
     page_title="My ChatBot",
