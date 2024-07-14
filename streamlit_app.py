@@ -30,18 +30,25 @@ except FileNotFoundError:
     faqs = {}
 
 # Function to get FAQ response based on prompt
+# Function to get FAQ response based on prompt
 def get_faq_response(prompt):
     if not prompt:
         return None
     
     clean_prompt = re.sub(r'[^\w\s]', '', prompt.strip())
 
+    # Check for exact match first
+    if clean_prompt in faqs:
+        return faqs[clean_prompt]
+
+    # Check for a more general query
     for question, answer in faqs.items():
         clean_question = re.sub(r'[^\w\s]', '', question.strip())
         
         pattern = re.compile(re.escape(clean_prompt), re.IGNORECASE)
         if pattern.search(clean_question):
             return answer
+    
     return None
 
 # Replicate Credentials
