@@ -20,6 +20,7 @@ st.components.v1.html(f"""
   <script>
                       console.log("recieved")
     window.addEventListener('message', (event) => {{
+                      console.log("received 2")
       if (event.origin !== 'https://blog-blast.vercel.app') return; // Validate the origin
 
       const message = event.data;
