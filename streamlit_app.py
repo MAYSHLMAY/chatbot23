@@ -24,16 +24,15 @@ def handle_message(event):
     except (ValueError, TypeError):
         pass
 
-# Add the event listener to the window
-st.markdown("""
+st.write("""
 <script>
 window.addEventListener('message', function(event) {
-    handle_message({ data: event.data });
+    handle_message(event);
 }, false);
 </script>
 """, unsafe_allow_html=True)
 
-st.experimental_set_query_params(message=st.json(handle_message))
+st.experimental_set_query_params(message=st.json({'type': 'SET_USERNAME', 'username': 'John Doe'}))
 
 
 
