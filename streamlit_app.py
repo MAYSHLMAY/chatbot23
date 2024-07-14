@@ -15,17 +15,18 @@ def clear_chat_history():
 st.button('Clear Chat History', on_click=clear_chat_history)
 
 
-# Include the JavaScript code
-st_javascript("""
-  window.addEventListener('message', (event) => {
-    if (event.origin !== 'https://blog-blast.vercel.app/') return; // Validate the origin
+st.components.v1.html("""
+  <script>
+    window.addEventListener('message', (event) => {
+      if (event.origin !== 'https://yourparentapp.com') return; // Validate the origin
 
-    const message = event.data;
-    if (message.type === 'setUser') {
-      const currentUser = message.user;
-      window.location.search = `?user=${encodeURIComponent(currentUser)}`;
-    }
-  });
+      const message = event.data;
+      if (message.type === 'setUser') {
+        const currentUser = message.user;
+        window.location.search = `?user=${encodeURIComponent(currentUser)}`;
+      }
+    });
+  </script>
 """)
 
 # Retrieve the currentUser data from query params
@@ -37,7 +38,6 @@ if current_user:
     st.write(f"Hello, {current_user}!")
 else:
     st.write("User not logged in.")
-
 
 
 # Load FAQs
