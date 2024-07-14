@@ -13,38 +13,29 @@ def clear_chat_history():
     st.session_state.messages = [{"role": "assistant", "content": "How may I assist you today?"}]
 st.button('Clear Chat History', on_click=clear_chat_history)
 
-import streamlit as st
-import json
 
-def set_username(username):
-    st.write(f"Hello, {username}!")
+# Include the JavaScript code
+st_javascript("""
+  window.addEventListener('message', (event) => {
+    if (event.origin !== 'https://blog-blast.vercel.app/') return; // Validate the origin
 
-def handle_message(event):
-    try:
-        data = json.loads(event.data)
-        if data.get('type') == 'SET_USERNAME':
-            set_username(data.get('username'))
-    except (ValueError, TypeError):
-        pass
+    const message = event.data;
+    if (message.type === 'setUser') {
+      const currentUser = message.user;
+      window.location.search = `?user=${encodeURIComponent(currentUser)}`;
+    }
+  });
+""")
 
-# Add the event listener to the window
-st.markdown("""
-<script>
-window.addEventListener('message', function(event) {
-    handle_message(event);
-}, false);
-</script>
-""", unsafe_allow_html=True)
+# Retrieve the currentUser data from query params
+query_params = st.experimental_get_query_params()
+current_user = query_params.get('user', [None])[0]
 
-# Retrieve the username from the parent component
-parent_message = st.experimental_get_query_params().get('message', [None])[0]
-if parent_message:
-    try:
-        parent_data = json.loads(parent_message)
-        if parent_data.get('type') == 'SET_USERNAME':
-            set_username(parent_data.get('username'))
-    except (ValueError, TypeError):
-        pass
+# Use the currentUser data as needed in your Streamlit app
+if current_user:
+    st.write(f"Hello, {current_user}!")
+else:
+    st.write("User not logged in.")
 
 
 
