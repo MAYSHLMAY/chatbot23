@@ -18,7 +18,7 @@ st.button('Clear Chat History', on_click=clear_chat_history)
 st.components.v1.html("""
   <script>
     window.addEventListener('message', (event) => {
-      if (event.origin !== 'https://yourparentapp.com') return; // Validate the origin
+      if (event.origin !== 'https://blog-blast.vercel.app/') return; // Validate the origin
 
       const message = event.data;
       if (message.type === 'setUser') {
