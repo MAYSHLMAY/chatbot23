@@ -16,16 +16,18 @@ st.button('Clear Chat History', on_click=clear_chat_history)
 def set_username(username):
     st.write(f"Hello, {username}!")
 
-# Set up the message event listener
 def handle_message(event):
-    data = json.loads(event.data)
-    if data.get('type') == 'SET_USERNAME':
-        set_username(data.get('username'))
+    try:
+        data = json.loads(event.data)
+        if data.get('type') == 'SET_USERNAME':
+            set_username(data.get('username'))
+    except ValueError:
+        pass
 
 # Add the event listener to the window
 st.markdown("""
 <script>
-window.addEventListener('message', handle_message);
+window.addEventListener('message', handle_message, false);
 </script>
 """, unsafe_allow_html=True)
 
