@@ -37,3 +37,6 @@ You can also try out the larger models:
 - [Llama 2 blog](https://ai.meta.com/blog/llama-2/)
 - [Llama 2 research article](https://ai.meta.com/research/publications/llama-2-open-foundation-and-fine-tuned-chat-models/)
 - [Llama 2 GitHub repo](https://github.com/facebookresearch/llama/tree/main)
+
+Updates ... 
+TF-IDF Vectorization - Added code to vectorize FAQ questions and compute cosine similarity to find the closest matching question based on the user's prompt.

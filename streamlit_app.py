@@ -1,8 +1,10 @@
 import streamlit as st
 import replicate
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 import os
 import json
-import re  # Importing re for regular expressions
+import re
 
 st.set_page_config(
     page_title="BlogBLAST Chatbot",
@@ -14,10 +16,7 @@ def clear_chat_history():
     st.session_state.messages = [{"role": "assistant", "content": "How may I assist you today?"}]
 st.button('Clear Chat History', on_click=clear_chat_history)
 
-
-
 st.markdown("<h3 style='text-align: center; font-size: 3em;'>Blog BLAST Chat Bot</h3>", unsafe_allow_html=True)
-
 
 # Load FAQs
 faq_file_path = os.path.join(os.path.dirname(__file__), 'faqs.json')
@@ -29,29 +28,37 @@ except FileNotFoundError:
     st.error(f"FAQ file not found at path: {faq_file_path}")
     faqs = {}
 
-# Function to get FAQ response based on prompt
-import re
+# Prepare FAQ data
+questions = list(faqs.keys())
+answers = list(faqs.values())
+
+# Initialize TF-IDF Vectorizer
+vectorizer = TfidfVectorizer()
+
+# Fit the vectorizer on the FAQ questions
+tfidf_matrix = vectorizer.fit_transform(questions)
 
 # Function to get FAQ response based on prompt
 def get_faq_response(prompt):
     if not prompt:
         return None
-    
+
+    # Clean the prompt
     clean_prompt = re.sub(r'[^\w\s]', '', prompt.strip())
-
-    # First, try to find an exact match
-    for question, answer in faqs.items():
-        clean_question = re.sub(r'[^\w\s]', '', question.strip())
-        if clean_prompt.lower() == clean_question.lower():
-            return answer
-
-    # If no exact match, look for keyword-based matching
-    for question, answer in faqs.items():
-        clean_question = re.sub(r'[^\w\s]', '', question.strip())
-        pattern = re.compile(re.escape(clean_prompt), re.IGNORECASE)
-        if pattern.search(clean_question):
-            return answer
     
+    # Transform the prompt into TF-IDF vector
+    prompt_vector = vectorizer.transform([clean_prompt])
+
+    # Compute cosine similarity between the prompt and FAQ questions
+    similarities = cosine_similarity(prompt_vector, tfidf_matrix).flatten()
+
+    # Get the index of the most similar FAQ question
+    max_index = similarities.argmax()
+
+    # If the similarity score is high enough, return the corresponding answer
+    if similarities[max_index] > 0.1:  # Adjust the threshold as needed
+        return answers[max_index]
+
     return None
 
 # Replicate Credentials
@@ -84,7 +91,7 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
 
-# Function for generating LLaMA2 response. Refactored from https://github.com/a16z-infra/llama2-chatbot
+# Function for generating LLaMA2 response
 def generate_llama2_response(prompt_input):
     string_dialogue = "You are a helpful assistant. You do not respond as 'User' or pretend to be 'User'. You only respond once as 'Assistant'."
     for dict_message in st.session_state.messages:
