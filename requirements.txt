@@ -1,4 +1,4 @@
 streamlit
 replicate
 streamlit-javascript
-sklearn
+scikit-learn
