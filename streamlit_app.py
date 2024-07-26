@@ -1,9 +1,8 @@
 import streamlit as st
+import replicate
 import os
 import json
-import re
-
-from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments, TextDataset, DataCollatorForLanguageModeling
+import re  # Importing re for regular expressions
 
 st.set_page_config(
     page_title="BlogBLAST Chatbot",
@@ -15,7 +14,10 @@ def clear_chat_history():
     st.session_state.messages = [{"role": "assistant", "content": "How may I assist you today?"}]
 st.button('Clear Chat History', on_click=clear_chat_history)
 
+
+
 st.markdown("<h3 style='text-align: center; font-size: 3em;'>Blog BLAST Chat Bot</h3>", unsafe_allow_html=True)
+
 
 # Load FAQs
 faq_file_path = os.path.join(os.path.dirname(__file__), 'faqs.json')
@@ -26,6 +28,9 @@ try:
 except FileNotFoundError:
     st.error(f"FAQ file not found at path: {faq_file_path}")
     faqs = {}
+
+# Function to get FAQ response based on prompt
+import re
 
 # Function to get FAQ response based on prompt
 def get_faq_response(prompt):
@@ -49,64 +54,6 @@ def get_faq_response(prompt):
     
     return None
 
-# Prepare training data from FAQs
-def prepare_training_data(faqs):
-    training_data = ""
-    for question, answer in faqs.items():
-        training_data += f"User: {question}\nAssistant: {answer}\n"
-    with open('training_data.txt', 'w') as f:
-        f.write(training_data)
-
-prepare_training_data(faqs)
-
-# Fine-tune the model
-model_name = 'facebook/llama-7b'  # Change to the model you want to fine-tune
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForCausalLM.from_pretrained(model_name)
-
-def fine_tune_model():
-    training_args = TrainingArguments(
-        output_dir='./results',
-        overwrite_output_dir=True,
-        num_train_epochs=1,  # Increase for better results
-        per_device_train_batch_size=2,
-        save_steps=10_000,
-        save_total_limit=2,
-        prediction_loss_only=True,
-    )
-
-    train_dataset = TextDataset(
-        tokenizer=tokenizer,
-        file_path="training_data.txt",
-        block_size=128,
-    )
-    data_collator = DataCollatorForLanguageModeling(
-        tokenizer=tokenizer,
-        mlm=False,
-    )
-
-    trainer = Trainer(
-        model=model,
-        args=training_args,
-        data_collator=data_collator,
-        train_dataset=train_dataset,
-    )
-
-    trainer.train()
-    trainer.save_model("./fine_tuned_model")
-    tokenizer.save_pretrained("./fine_tuned_model")
-
-fine_tune_model()
-
-# Load the fine-tuned model
-model = AutoModelForCausalLM.from_pretrained('./fine_tuned_model')
-tokenizer = AutoTokenizer.from_pretrained('./fine_tuned_model')
-
-def generate_response(prompt):
-    inputs = tokenizer(prompt, return_tensors="pt")
-    outputs = model.generate(inputs.input_ids, max_length=150)
-    return tokenizer.decode(outputs[0], skip_special_tokens=True)
-
 # Replicate Credentials
 with st.sidebar:
     if 'REPLICATE_API_TOKEN' in st.secrets:
@@ -119,14 +66,36 @@ with st.sidebar:
             st.success('Proceed to entering your prompt message!', icon='👉')
     os.environ['REPLICATE_API_TOKEN'] = replicate_api
 
+    selected_model = 'Llama2-7B'
+    if selected_model == 'Llama2-7B':
+        llm = 'a16z-infra/llama7b-v2-chat:4f0a4744c7295c024a1de15e1a63c880d3da035fa1f49bfd344fe076074c8eea'
+    elif selected_model == 'Llama2-13B':
+        llm = 'a16z-infra/llama13b-v2-chat:df7690f1994d94e96ad9d568eac121aecf50684a0b0963b25a41cc40061269e5'
+    temperature = 0.1
+    top_p = 0.9
+    max_length = 120
+
 # Store LLM generated responses
 if "messages" not in st.session_state.keys():
-    st.session_state.messages = [{"role": "assistant", "content": "How may I assist you today?"}]
+    st.session_state.messages = [{"role": "assistant", "content": "How Blog BLAST assist you today?"}]
 
 # Display or clear chat messages
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
+
+# Function for generating LLaMA2 response. Refactored from https://github.com/a16z-infra/llama2-chatbot
+def generate_llama2_response(prompt_input):
+    string_dialogue = "You are a helpful assistant. You do not respond as 'User' or pretend to be 'User'. You only respond once as 'Assistant'."
+    for dict_message in st.session_state.messages:
+        if dict_message["role"] == "user":
+            string_dialogue += "User: " + dict_message["content"] + "\n\n"
+        else:
+            string_dialogue += "Assistant: " + dict_message["content"] + "\n\n"
+    output = replicate.run(llm, 
+                           input={"prompt": f"{string_dialogue} {prompt_input} Assistant: ",
+                                  "temperature":temperature, "top_p":top_p, "max_length":max_length, "repetition_penalty":1})
+    return output
 
 # User-provided prompt
 if prompt := st.chat_input(disabled=not replicate_api):
@@ -141,9 +110,14 @@ if st.session_state.messages[-1]["role"] != "assistant":
             # Check if prompt matches any FAQ
             faq_response = get_faq_response(prompt)
             if faq_response:
-                response = faq_response
+                response = [faq_response]
             else:
-                response = generate_response(prompt)
-            st.markdown(response)
-    message = {"role": "assistant", "content": response}
+                response = generate_llama2_response(prompt)
+            placeholder = st.empty()
+            full_response = ''
+            for item in response:
+                full_response += item
+                placeholder.markdown(full_response)
+            placeholder.markdown(full_response)
+    message = {"role": "assistant", "content": full_response}
     st.session_state.messages.append(message)
