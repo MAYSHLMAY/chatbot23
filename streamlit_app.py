@@ -35,15 +35,19 @@ with st.sidebar:
         llm = 'a16z-infra/llama7b-v2-chat:4f0a4744c7295c024a1de15e1a63c880d3da035fa1f49bfd344fe076074c8eea'
     elif selected_model == 'Llama2-13B':
         llm = 'a16z-infra/llama13b-v2-chat:df7690f1994d94e96ad9d568eac121aecf50684a0b0963b25a41cc40061269e5'
-    
-    temperature = st.slider('Temperature', 0.0, 1.0, 0.7, 0.1)
-    top_p = st.slider('Top P', 0.0, 1.0, 0.9, 0.1)
-    max_length = st.slider('Max Length', 50, 1000, 300, 50)
-    max_words = st.slider('Max Words', 50, 2000, 500, 50)
-    tone = st.selectbox('Select Tone', ['Neutral', 'Formal', 'Informal', 'Persuasive'])
+
+# Main page controls
+st.sidebar.markdown("---")  # Separator in the sidebar
+st.sidebar.header("Generation Settings")
+
+# Main page controls for blog generation
+st.sidebar.header("Model and Settings")
+temperature = st.slider('Temperature', 0.0, 1.0, 0.7, 0.1)
+top_p = st.slider('Top P', 0.0, 1.0, 0.9, 0.1)
+max_length = st.slider('Max Length', 50, 1000, 300, 50)
 
 # Function to generate blog post
-def generate_blog_post(prompt_input):
+def generate_blog_post(prompt_input, tone, max_words):
     try:
         output = ""
         tone_prompt = {
@@ -78,13 +82,18 @@ def generate_blog_post(prompt_input):
         st.error(f"Error: {e}")
         return None
 
-# User-provided prompt
+# Main page user input
+st.sidebar.markdown("---")  # Separator in the sidebar
+st.sidebar.header("User Input")
+
 user_prompt = st.text_area("Enter the prompt for the blog post:", "Write a blog post about the impact of AI on modern education.")
+tone = st.selectbox('Select Tone', ['Neutral', 'Formal', 'Informal', 'Persuasive'])
+max_words = st.slider('Max Words', 50, 2000, 500, 50)
 
 if st.button("Generate Blog Post"):
     if replicate_api_token:
         with st.spinner("Generating blog post..."):
-            blog_post = generate_blog_post(user_prompt)
+            blog_post = generate_blog_post(user_prompt, tone, max_words)
             if blog_post:
                 st.subheader("Generated Blog Post:")
                 st.write(blog_post)
