@@ -39,15 +39,26 @@ with st.sidebar:
     temperature = st.slider('Temperature', 0.0, 1.0, 0.7, 0.1)
     top_p = st.slider('Top P', 0.0, 1.0, 0.9, 0.1)
     max_length = st.slider('Max Length', 50, 1000, 300, 50)
+    max_words = st.slider('Max Words', 50, 2000, 500, 50)
+    tone = st.selectbox('Select Tone', ['Neutral', 'Formal', 'Informal', 'Persuasive'])
 
 # Function to generate blog post
 def generate_blog_post(prompt_input):
     try:
         output = ""
+        tone_prompt = {
+            'Neutral': '',
+            'Formal': 'Write in a formal tone.',
+            'Informal': 'Write in an informal tone.',
+            'Persuasive': 'Write in a persuasive tone.'
+        }[tone]
+        
+        full_prompt = f"{tone_prompt}\n{prompt_input}"
+
         for event in replicate.stream(
             llm,
             input={
-                "prompt": prompt_input,
+                "prompt": full_prompt,
                 "temperature": temperature,
                 "top_p": top_p,
                 "max_length": max_length,
@@ -55,6 +66,11 @@ def generate_blog_post(prompt_input):
             },
         ):
             output += str(event)
+        
+        # Limit the output to the specified max word count
+        words = output.split()
+        if len(words) > max_words:
+            output = ' '.join(words[:max_words])
         
         return output.strip()
     
